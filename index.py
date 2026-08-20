@@ -97,3 +97,21 @@ server {{
         file.write(config)
 
     print(f"✅ Nginx config created: {config_path}")
+
+def enable_site(domain):
+    available = f"/etc/nginx/sites-available/{domain}"
+    enabled = f"/etc/nginx/sites-enabled/{domain}"
+
+    if os.path.exists(enabled):
+        os.remove(enabled)
+
+    os.symlink(available, enabled)
+
+    default_config = "/etc/nginx/sites-enabled/default"
+
+    if os.path.exists(default_config):
+        os.remove(default_config)
+
+    run("nginx -t")
+    run("systemctl enable nginx")
+    run("systemctl restart nginx")
