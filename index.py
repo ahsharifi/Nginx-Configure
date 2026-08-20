@@ -129,3 +129,16 @@ def set_permissions(site_path):
 
     if os.path.isdir(cache):
         run(f"chmod -R 775 '{cache}'")
+
+def configure_ssl(domain):
+    print("\n🔒 Configuring SSL...")
+
+    run(
+        f"certbot --nginx "
+        f"-d {domain} "
+        f"-d www.{domain} "
+        f"--non-interactive "
+        f"--agree-tos "
+        f"--register-unsafely-without-email "
+        f"--redirect"
+    )
