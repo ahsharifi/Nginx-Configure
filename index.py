@@ -142,3 +142,80 @@ def configure_ssl(domain):
         f"--register-unsafely-without-email "
         f"--redirect"
     )
+
+def main():
+    require_root()
+
+    print("=" * 60)
+    print("        NGINX WEBSITE DEPLOYMENT SCRIPT")
+    print("=" * 60)
+
+    domain = input("\n🌐 Domain: ").strip()
+    site_path = input("📁 Site folder path: ").strip()
+
+    if not domain:
+        print("❌ Domain is required.")
+        sys.exit(1)
+
+    if not os.path.isdir(site_path):
+        print(f"❌ Folder does not exist: {site_path}")
+        sys.exit(1)
+
+    site_path = os.path.abspath(site_path)
+
+    print("\n📋 Configuration")
+    print(f"Domain : {domain}")
+    print(f"Path   : {site_path}")
+
+    confirm = input("\nContinue? [y/N]: ").strip().lower()
+
+    if confirm != "y":
+        print("Cancelled.")
+        return
+
+    # 1. Install requirements
+    install_packages()
+
+    # 2. Detect PHP-FPM
+    php_socket = detect_php()
+
+    if php_socket:
+        print(f"✅ PHP-FPM detected: {php_socket}")
+    else:
+        print("ℹ️ PHP-FPM not detected. PHP configuration will be skipped.")
+
+    # 3. Permissions
+    set_permissions(site_path)
+
+    # 4. Nginx configuration
+    create_nginx_config(
+        domain,
+        site_path,
+        php_socket
+    )
+
+    # 5. Enable site
+    enable_site(domain)
+
+    # 6. SSL
+    ssl = input("\n🔒 Configure SSL with Let's Encrypt? [Y/n]: ").strip().lower()
+
+    if ssl != "n":
+        configure_ssl(domain)
+
+    # 7. Final test
+    run("nginx -t")
+    run("systemctl reload nginx")
+
+    print("\n" + "=" * 60)
+    print("✅ DEPLOYMENT COMPLETED")
+    print("=" * 60)
+
+    print(f"\n🌐 http://{domain}")
+
+    if ssl != "n":
+        print(f"🔒 https://{domain}")
+
+
+if __name__ == "__main__":
+    main()
