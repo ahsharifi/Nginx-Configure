@@ -115,3 +115,17 @@ def enable_site(domain):
     run("nginx -t")
     run("systemctl enable nginx")
     run("systemctl restart nginx")
+
+def set_permissions(site_path):
+    print("\n🔐 Setting permissions...")
+
+    run(f"chown -R www-data:www-data '{site_path}'")
+
+    storage = os.path.join(site_path, "storage")
+    cache = os.path.join(site_path, "bootstrap/cache")
+
+    if os.path.isdir(storage):
+        run(f"chmod -R 775 '{storage}'")
+
+    if os.path.isdir(cache):
+        run(f"chmod -R 775 '{cache}'")
