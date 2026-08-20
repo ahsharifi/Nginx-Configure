@@ -25,3 +25,17 @@ def require_root():
         print("مثال:")
         print("sudo python3 deploy.py")
         sys.exit(1)
+
+def install_packages():
+    print("\n📦 Installing required packages...")
+
+    run("apt update")
+
+    packages = [
+        "nginx",
+        "curl",
+        "certbot",
+        "python3-certbot-nginx"
+    ]
+
+    run("apt install -y " + " ".join(packages))
