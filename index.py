@@ -1,11 +1,58 @@
 import os
 import sys
 import subprocess
-from pathlib import Path
 
+
+# ==========================================
+# Colors
+# ==========================================
+
+RESET = "\033[0m"
+
+RED = "\033[0;31m"
+GREEN = "\033[0;32m"
+YELLOW = "\033[1;33m"
+BLUE = "\033[0;34m"
+MAGENTA = "\033[0;35m"
+CYAN = "\033[0;36m"
+WHITE = "\033[1;37m"
+
+BOLD = "\033[1m"
+
+
+# ==========================================
+# Output Helpers
+# ==========================================
+
+def info(message):
+    print(f"{CYAN}[INFO]{RESET} {message}")
+
+
+def success(message):
+    print(f"{GREEN}[✓]{RESET} {message}")
+
+
+def warning(message):
+    print(f"{YELLOW}[!]{RESET} {message}")
+
+
+def error(message):
+    print(f"{RED}[✗]{RESET} {message}")
+
+
+def step(title):
+    print()
+    print(f"{MAGENTA}{BOLD}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━{RESET}")
+    print(f"{WHITE}{BOLD}{title}{RESET}")
+    print(f"{MAGENTA}{BOLD}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━{RESET}")
+
+
+# ==========================================
+# Run Command
+# ==========================================
 
 def run(command, check=True):
-    print(f"\n$ {command}")
+    print(f"\n{BLUE}$ {command}{RESET}")
 
     result = subprocess.run(
         command,
@@ -14,22 +61,39 @@ def run(command, check=True):
     )
 
     if check and result.returncode != 0:
-        print("❌ Command failed")
+        error("Command failed.")
         sys.exit(1)
 
     return result
 
+
+# ==========================================
+# Root Check
+# ==========================================
+
 def require_root():
     if os.geteuid() != 0:
-        print("❌ این اسکریپت باید با root اجرا شود.")
-        print("مثال:")
-        print("sudo python3 deploy.py")
+        error("This script must be run as root.")
+
+        print()
+        print(f"{YELLOW}Example:{RESET}")
+        print(f"{CYAN}sudo python3 deploy.py{RESET}")
+
         sys.exit(1)
 
+
+# ==========================================
+# Install Packages
+# ==========================================
+
 def install_packages():
-    print("\n📦 Installing required packages...")
+    step("2. Installing Required Packages")
+
+    info("Updating package list...")
 
     run("apt update")
+
+    success("Package list updated.")
 
     packages = [
         "nginx",
@@ -38,9 +102,20 @@ def install_packages():
         "python3-certbot-nginx"
     ]
 
+    info("Installing required packages...")
+
     run("apt install -y " + " ".join(packages))
 
+    success("Required packages installed.")
+
+
+# ==========================================
+# Detect PHP-FPM
+# ==========================================
+
 def detect_php():
+    step("3. Detecting PHP-FPM")
+
     result = subprocess.run(
         "find /run/php -name 'php*-fpm.sock' 2>/dev/null | head -n 1",
         shell=True,
@@ -51,11 +126,24 @@ def detect_php():
     socket = result.stdout.strip()
 
     if socket:
+        success("PHP-FPM detected.")
+        print(f"  {CYAN}Socket:{RESET} {socket}")
+
         return socket
+
+    warning("PHP-FPM not detected.")
 
     return None
 
+
+# ==========================================
+# Create Nginx Configuration
+# ==========================================
+
 def create_nginx_config(domain, site_path, php_socket=None):
+
+    step("5. Creating Nginx Configuration")
+
     config_path = f"/etc/nginx/sites-available/{domain}"
 
     if os.path.isdir(os.path.join(site_path, "public")):
@@ -87,7 +175,7 @@ server {{
 """
 
     config += """
-    location ~ /\\.ht {{
+    location ~ /\\.ht {
         deny all;
     }
 }
@@ -96,9 +184,18 @@ server {{
     with open(config_path, "w") as file:
         file.write(config)
 
-    print(f"✅ Nginx config created: {config_path}")
+    success("Nginx configuration created.")
+    print(f"  {CYAN}Config:{RESET} {config_path}")
+
+
+# ==========================================
+# Enable Site
+# ==========================================
 
 def enable_site(domain):
+
+    step("6. Enabling Website")
+
     available = f"/etc/nginx/sites-available/{domain}"
     enabled = f"/etc/nginx/sites-enabled/{domain}"
 
@@ -112,12 +209,34 @@ def enable_site(domain):
     if os.path.exists(default_config):
         os.remove(default_config)
 
+        info("Default Nginx configuration removed.")
+
+    info("Testing Nginx configuration...")
+
     run("nginx -t")
+
+    success("Nginx configuration is valid.")
+
+    info("Enabling Nginx service...")
+
     run("systemctl enable nginx")
+
+    info("Restarting Nginx...")
+
     run("systemctl restart nginx")
 
+    success("Nginx is running.")
+
+
+# ==========================================
+# Set Permissions
+# ==========================================
+
 def set_permissions(site_path):
-    print("\n🔐 Setting permissions...")
+
+    step("4. Configuring Permissions")
+
+    info("Changing ownership...")
 
     run(f"chown -R www-data:www-data '{site_path}'")
 
@@ -125,13 +244,25 @@ def set_permissions(site_path):
     cache = os.path.join(site_path, "bootstrap/cache")
 
     if os.path.isdir(storage):
+        info("Configuring storage permissions...")
         run(f"chmod -R 775 '{storage}'")
 
     if os.path.isdir(cache):
+        info("Configuring bootstrap/cache permissions...")
         run(f"chmod -R 775 '{cache}'")
 
+    success("Permissions configured.")
+
+
+# ==========================================
+# Configure SSL
+# ==========================================
+
 def configure_ssl(domain):
-    print("\n🔒 Configuring SSL...")
+
+    step("8. Configuring SSL")
+
+    info("Requesting Let's Encrypt certificate...")
 
     run(
         f"certbot --nginx "
@@ -143,34 +274,57 @@ def configure_ssl(domain):
         f"--redirect"
     )
 
+    success("SSL certificate configured successfully.")
+
+
+# ==========================================
+# Main
+# ==========================================
+
 def main():
+
     require_root()
 
-    print("=" * 60)
-    print("        NGINX WEBSITE DEPLOYMENT SCRIPT")
-    print("=" * 60)
+    print()
+    print(f"{CYAN}{BOLD}")
+    print("╔══════════════════════════════════════════╗")
+    print("║                                          ║")
+    print("║        NGINX WEBSITE DEPLOYMENT          ║")
+    print("║                                          ║")
+    print("╚══════════════════════════════════════════╝")
+    print(f"{RESET}")
 
-    domain = input("\n🌐 Domain: ").strip()
-    site_path = input("📁 Site folder path: ").strip()
+    step("1. Website Configuration")
+
+    domain = input(
+        f"{CYAN}🌐 Domain: {RESET}"
+    ).strip()
+
+    site_path = input(
+        f"{CYAN}📁 Site folder path: {RESET}"
+    ).strip()
 
     if not domain:
-        print("❌ Domain is required.")
+        error("Domain is required.")
         sys.exit(1)
 
     if not os.path.isdir(site_path):
-        print(f"❌ Folder does not exist: {site_path}")
+        error(f"Folder does not exist: {site_path}")
         sys.exit(1)
 
     site_path = os.path.abspath(site_path)
 
-    print("\n📋 Configuration")
-    print(f"Domain : {domain}")
-    print(f"Path   : {site_path}")
+    print()
+    print(f"{WHITE}{BOLD}Configuration:{RESET}")
+    print(f"  {CYAN}Domain:{RESET} {domain}")
+    print(f"  {CYAN}Path:{RESET}   {site_path}")
 
-    confirm = input("\nContinue? [y/N]: ").strip().lower()
+    confirm = input(
+        f"\n{YELLOW}Continue? [y/N]: {RESET}"
+    ).strip().lower()
 
     if confirm != "y":
-        print("Cancelled.")
+        warning("Deployment cancelled.")
         return
 
     # 1. Install requirements
@@ -178,11 +332,6 @@ def main():
 
     # 2. Detect PHP-FPM
     php_socket = detect_php()
-
-    if php_socket:
-        print(f"✅ PHP-FPM detected: {php_socket}")
-    else:
-        print("ℹ️ PHP-FPM not detected. PHP configuration will be skipped.")
 
     # 3. Permissions
     set_permissions(site_path)
@@ -198,23 +347,58 @@ def main():
     enable_site(domain)
 
     # 6. SSL
-    ssl = input("\n🔒 Configure SSL with Let's Encrypt? [Y/n]: ").strip().lower()
+    step("7. SSL Configuration")
+
+    ssl = input(
+        f"{CYAN}🔒 Configure SSL with Let's Encrypt? [Y/n]: {RESET}"
+    ).strip().lower()
 
     if ssl != "n":
         configure_ssl(domain)
+    else:
+        warning("SSL configuration skipped.")
 
     # 7. Final test
+    step("9. Finalizing Deployment")
+
+    info("Running final Nginx configuration test...")
+
     run("nginx -t")
+
+    info("Reloading Nginx...")
+
     run("systemctl reload nginx")
 
-    print("\n" + "=" * 60)
-    print("✅ DEPLOYMENT COMPLETED")
-    print("=" * 60)
+    success("Nginx reloaded successfully.")
 
-    print(f"\n🌐 http://{domain}")
+    # ==========================================
+    # Deployment Complete
+    # ==========================================
+
+    print()
+
+    print(f"{GREEN}{BOLD}")
+    print("╔══════════════════════════════════════════╗")
+    print("║                                          ║")
+    print("║       ✓ DEPLOYMENT COMPLETED             ║")
+    print("║                                          ║")
+    print("╚══════════════════════════════════════════╝")
+    print(f"{RESET}")
+
+    print()
+    print(f"{CYAN}{BOLD}🌐 Website:{RESET}")
+    print(f"   {GREEN}http://{domain}{RESET}")
 
     if ssl != "n":
-        print(f"🔒 https://{domain}")
+        print()
+        print(f"{CYAN}{BOLD}🔒 HTTPS:{RESET}")
+        print(f"   {GREEN}https://{domain}{RESET}")
+
+    print()
+    print(f"{MAGENTA}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━{RESET}")
+    print(f"{GREEN}{BOLD}        Deployment finished! 🚀{RESET}")
+    print(f"{MAGENTA}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━{RESET}")
+    print()
 
 
 if __name__ == "__main__":
