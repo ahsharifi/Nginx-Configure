@@ -17,53 +17,6 @@
 
 ## 📌 Overview
 
-This project automates the basic configuration and deployment of websites on Nginx using Bash or Python.
-
-### Features
-
-- Install Nginx
-- Install Certbot
-- Detect PHP-FPM
-- Detect Laravel projects
-- Configure Nginx Virtual Host
-- Configure permissions
-- Enable website
-- Configure SSL
-- Redirect HTTP to HTTPS
-
----
-
-<!-- English documentation continues here -->
-
-
-# 🇮🇷 فارسی
-
-<a name="-فارسی"></a>
-
-## 📌 معرفی
-
-این پروژه مراحل کانفیگ و Deploy سایت روی Nginx را با استفاده از Bash یا Python به‌صورت خودکار انجام می‌دهد.
-
-### امکانات
-
-- نصب Nginx
-- نصب Certbot
-- تشخیص PHP-FPM
-- تشخیص پروژه Laravel
-- ساخت Virtual Host
-- تنظیم Permission
-- فعال‌سازی سایت
-- تنظیم SSL
-- انتقال HTTP به HTTPS
-
-<!-- Persian documentation continues here -->
-
----
-
-# 🇬🇧 English
-
-## 📌 Overview
-
 This project automates the basic configuration of a website on an Nginx server.
 
 It can:
@@ -710,9 +663,13 @@ certbot renew --dry-run
 
 # 🇮🇷 فارسی
 
+<a name="-فارسی"></a>
+
 ## 📌 معرفی
 
-این پروژه برای خودکارسازی مراحل Deploy و کانفیگ سایت روی **Nginx** ساخته شده است.
+این پروژه مراحل کانفیگ و Deploy سایت روی Nginx را با استفاده از Bash یا Python به‌صورت خودکار انجام می‌دهد.
+
+### امکانات
 
 دو نسخه دارد:
 
