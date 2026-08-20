@@ -39,3 +39,18 @@ def install_packages():
     ]
 
     run("apt install -y " + " ".join(packages))
+
+def detect_php():
+    result = subprocess.run(
+        "find /run/php -name 'php*-fpm.sock' 2>/dev/null | head -n 1",
+        shell=True,
+        capture_output=True,
+        text=True
+    )
+
+    socket = result.stdout.strip()
+
+    if socket:
+        return socket
+
+    return None
