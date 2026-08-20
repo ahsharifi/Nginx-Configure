@@ -53,7 +53,7 @@ step() {
 
 if [ "$EUID" -ne 0 ]; then
 
-    error "این اسکریپت باید با root اجرا شود."
+    error "This script must be run as root."
 
     echo ""
     echo -e "${YELLOW}Example:${RESET}"
@@ -73,7 +73,7 @@ echo ""
 echo -e "${CYAN}${BOLD}"
 echo "╔══════════════════════════════════════════╗"
 echo "║                                          ║"
-echo "║       NGINX WEBSITE DEPLOYMENT           ║"
+echo "║         NGINX WEBSITE DEPLOYMENT         ║"
 echo "║                                          ║"
 echo "╚══════════════════════════════════════════╝"
 echo -e "${RESET}"
@@ -374,7 +374,7 @@ echo ""
 echo -e "${GREEN}${BOLD}"
 echo "╔══════════════════════════════════════════╗"
 echo "║                                          ║"
-echo "║       ✓ DEPLOYMENT COMPLETED            ║"
+echo "║        ✓ DEPLOYMENT COMPLETED           ║"
 echo "║                                          ║"
 echo "╚══════════════════════════════════════════╝"
 echo -e "${RESET}"
