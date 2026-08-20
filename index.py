@@ -54,3 +54,46 @@ def detect_php():
         return socket
 
     return None
+
+def create_nginx_config(domain, site_path, php_socket=None):
+    config_path = f"/etc/nginx/sites-available/{domain}"
+
+    if os.path.isdir(os.path.join(site_path, "public")):
+        web_root = os.path.join(site_path, "public")
+    else:
+        web_root = site_path
+
+    config = f"""
+server {{
+    listen 80;
+    listen [::]:80;
+
+    server_name {domain} www.{domain};
+
+    root {web_root};
+    index index.php index.html index.htm;
+
+    location / {{
+        try_files $uri $uri/ /index.php?$query_string;
+    }}
+"""
+
+    if php_socket:
+        config += f"""
+    location ~ \\.php$ {{
+        include snippets/fastcgi-php.conf;
+        fastcgi_pass unix:{php_socket};
+    }}
+"""
+
+    config += """
+    location ~ /\\.ht {{
+        deny all;
+    }
+}
+"""
+
+    with open(config_path, "w") as file:
+        file.write(config)
+
+    print(f"✅ Nginx config created: {config_path}")
