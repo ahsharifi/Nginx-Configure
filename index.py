@@ -18,3 +18,10 @@ def run(command, check=True):
         sys.exit(1)
 
     return result
+
+def require_root():
+    if os.geteuid() != 0:
+        print("❌ این اسکریپت باید با root اجرا شود.")
+        print("مثال:")
+        print("sudo python3 deploy.py")
+        sys.exit(1)
